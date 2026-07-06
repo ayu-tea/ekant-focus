@@ -12,33 +12,29 @@ const themes = {
     name: "Ocean",
     image: "/images/ocean.png",
     textColor: "text-cyan-50",
-    buttonBg: "bg-cyan-500/20 hover:bg-cyan-500/30 border-cyan-400/30",
-    ring: "rgba(255,255,255,0.70)",
-    ringTrack: "rgba(255,255,255,0.12)",
+    buttonBg: "bg-cyan-500/15 hover:bg-cyan-500/25 border-cyan-300/25",
+    accent: "from-cyan-300/40 to-cyan-500/10",
   },
   forest: {
     name: "Forest",
     image: "/images/forest.png",
     textColor: "text-emerald-50",
-    buttonBg: "bg-emerald-500/20 hover:bg-emerald-500/30 border-emerald-400/30",
-    ring: "rgba(255,255,255,0.70)",
-    ringTrack: "rgba(255,255,255,0.12)",
+    buttonBg: "bg-emerald-500/15 hover:bg-emerald-500/25 border-emerald-300/25",
+    accent: "from-emerald-300/40 to-emerald-500/10",
   },
   desert: {
     name: "Desert",
     image: "/images/desert.png",
     textColor: "text-orange-50",
-    buttonBg: "bg-orange-500/20 hover:bg-orange-500/30 border-orange-400/30",
-    ring: "rgba(255,255,255,0.72)",
-    ringTrack: "rgba(255,255,255,0.12)",
+    buttonBg: "bg-orange-500/15 hover:bg-orange-500/25 border-orange-300/25",
+    accent: "from-orange-300/40 to-orange-500/10",
   },
   space: {
     name: "Space",
     image: "/images/space.png",
     textColor: "text-purple-50",
-    buttonBg: "bg-purple-500/20 hover:bg-purple-500/30 border-purple-400/30",
-    ring: "rgba(255,255,255,0.72)",
-    ringTrack: "rgba(255,255,255,0.12)",
+    buttonBg: "bg-purple-500/15 hover:bg-purple-500/25 border-purple-300/25",
+    accent: "from-purple-300/40 to-purple-500/10",
   },
 } satisfies Record<Theme, any>
 
@@ -50,7 +46,6 @@ const LS_KEYS = {
   zen: "ekant_zen",
 } as const
 
-// Slider mapping: 0 -> 1 min, 1 -> 5 min, 2 -> 10 min, ... , 36 -> 180 min
 const sliderIndexToMinutes = (idx: number) => (idx <= 0 ? 1 : idx * 5)
 const minutesToSliderIndex = (mins: number) => (mins <= 1 ? 0 : Math.round(mins / 5))
 
@@ -64,7 +59,6 @@ export default function Ekant() {
   const [mode, setMode] = useState<Mode>("timer")
   const [isActive, setIsActive] = useState(false)
 
-  // Slider index (0..36)
   const [sliderIndex, setSliderIndex] = useState(() => minutesToSliderIndex(25))
 
   const initialTimerSeconds = useMemo(() => sliderIndexToMinutes(minutesToSliderIndex(25)) * 60, [])
@@ -73,30 +67,21 @@ export default function Ekant() {
 
   const [soundEnabled, setSoundEnabled] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-
-  // Zen mode
   const [zenMode, setZenMode] = useState(false)
 
-  // Auto-hide controls while running
   const [showControls, setShowControls] = useState(true)
   const hideControlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // End animation: ring shrink -> pop -> disappear
   const [ringPhase, setRingPhase] = useState<"idle" | "ending">("idle")
-
-  // Sessions today
   const [sessionsToday, setSessionsToday] = useState(0)
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const settingsRef = useRef<HTMLDivElement | null>(null)
-
-  // Wake Lock
   const wakeLockRef = useRef<any>(null)
 
   const currentTheme = themes[theme]
 
-  /* ---------- init ---------- */
   useEffect(() => {
     try {
       const savedTheme = localStorage.getItem(LS_KEYS.theme) as Theme | null
@@ -108,15 +93,13 @@ export default function Ekant() {
       if (savedSound === "1") setSoundEnabled(true)
       if (savedDark === "1") setDarkMode(true)
       if (savedZen === "1") setZenMode(true)
-    } catch {
-      // ignore
-    }
+    } catch {}
 
-    // Sessions today init (localStorage)
     try {
       const raw = localStorage.getItem(LS_KEYS.sessions)
       const parsed: SessionsPayload | null = raw ? JSON.parse(raw) : null
       const t = todayKey()
+
       if (!parsed || parsed.date !== t) {
         const fresh: SessionsPayload = { date: t, count: 0 }
         localStorage.setItem(LS_KEYS.sessions, JSON.stringify(fresh))
@@ -124,16 +107,13 @@ export default function Ekant() {
       } else {
         setSessionsToday(parsed.count || 0)
       }
-    } catch {
-      // ignore
-    }
+    } catch {}
 
     audioRef.current = new Audio(
       "data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIGWS57OahUhELTKXh8blsJAU2jdXwyoEnCBdfs+n2pUsZDlSr5O+1bSAFMIrS8NSFOwoXY7zp8qFaGgtJo+HyvmkfBSF+yu7fkj0MFl2465JjKRQZU6rs8KNeGggcgtHdqmcvDhE+ktTmrm85CB2x+rcnkwWDTya1uipcjwLFnyy5bJ3UhcQUK3j7ZlXFgsZfMvn2pRJFBRPpuTssm4tERVTs+PTmkYZD0mi4e25cyQFOY3U8MqBJwgXXrLo9axPGwpGouDutnckBSJ8yO7dkj0MFl2461NlKBQbU6vr7qVbGgsZftPn1qBMFhJOp+PsqWguEhZRrePtn1gXChh+0N7WolQYEE2n4+uoaS0WF1Ks6+2hWhsMGX7U59CVNQgcebDn8KFQGAtIo+HyvmkfBSJ7y+3ilz0LFmC76fKiUhMKTKXh8blsJAU2jdXwyoEnCBdfs+n2pUsZDlSr5O+1bSAFMIrS8NSFOwoXY7zp8qFaGgpKouHyv2oeBxyAy+7fkj0MF2G75+2eVBkLSKPh8r5pHwU="
     )
   }, [])
 
-  /* ---------- persist prefs ---------- */
   useEffect(() => {
     try {
       localStorage.setItem(LS_KEYS.theme, theme)
@@ -158,17 +138,17 @@ export default function Ekant() {
     } catch {}
   }, [zenMode])
 
-  /* ---------- outside click closes settings ---------- */
   useEffect(() => {
     if (!showSettings) return
+
     const handler = (e: MouseEvent) => {
       if (!settingsRef.current?.contains(e.target as Node)) setShowSettings(false)
     }
+
     window.addEventListener("mousedown", handler)
     return () => window.removeEventListener("mousedown", handler)
   }, [showSettings])
 
-  /* ---------- controls auto-hide helpers ---------- */
   const scheduleHideControls = () => {
     if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current)
     hideControlsTimeoutRef.current = setTimeout(() => {
@@ -187,7 +167,6 @@ export default function Ekant() {
         hideControlsTimeoutRef.current = null
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive])
 
   const handleUserNudge = () => {
@@ -196,7 +175,6 @@ export default function Ekant() {
     scheduleHideControls()
   }
 
-  /* ---------- Wake Lock (best effort) ---------- */
   useEffect(() => {
     const requestWakeLock = async () => {
       try {
@@ -204,9 +182,7 @@ export default function Ekant() {
         if (!("wakeLock" in navigator)) return
         // @ts-ignore
         wakeLockRef.current = await navigator.wakeLock.request("screen")
-      } catch {
-        // silent
-      }
+      } catch {}
     }
 
     const releaseWakeLock = async () => {
@@ -215,9 +191,7 @@ export default function Ekant() {
           await wakeLockRef.current.release()
           wakeLockRef.current = null
         }
-      } catch {
-        // silent
-      }
+      } catch {}
     }
 
     if (isActive) requestWakeLock()
@@ -228,7 +202,6 @@ export default function Ekant() {
     }
   }, [isActive])
 
-  /* ---------- keyboard shortcuts ---------- */
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null
@@ -275,21 +248,19 @@ export default function Ekant() {
         return
       }
 
-      if (e.key === "Escape") {
-        setShowSettings(false)
-      }
+      if (e.key === "Escape") setShowSettings(false)
     }
 
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
   }, [mode, timerDuration])
 
-  /* ---------- ticking ---------- */
   useEffect(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current)
       intervalRef.current = null
     }
+
     if (!isActive) return
 
     intervalRef.current = setInterval(() => {
@@ -308,26 +279,26 @@ export default function Ekant() {
               audioRef.current.play().catch(() => {})
             }
 
-            // Session complete -> increment sessions today
             try {
               const raw = localStorage.getItem(LS_KEYS.sessions)
               const parsed: SessionsPayload | null = raw ? JSON.parse(raw) : null
               const t = todayKey()
               const next: SessionsPayload =
                 parsed && parsed.date === t ? { date: t, count: (parsed.count || 0) + 1 } : { date: t, count: 1 }
+
               localStorage.setItem(LS_KEYS.sessions, JSON.stringify(next))
               setSessionsToday(next.count)
-            } catch {
-              // ignore
-            }
+            } catch {}
 
             setRingPhase("ending")
             setTimeout(() => setRingPhase("idle"), 520)
 
             return 0
           }
+
           return prev - 1
         }
+
         return prev + 1
       })
     }, 1000)
@@ -340,42 +311,46 @@ export default function Ekant() {
     }
   }, [isActive, mode, soundEnabled])
 
-  /* ---------- helpers ---------- */
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600)
     const mins = Math.floor((seconds % 3600) / 60)
     const secs = seconds % 60
 
     if (hrs > 0) {
-      return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+      return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs
+        .toString()
+        .padStart(2, "0")}`
     }
+
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
   }
 
-  // Progress ring should appear while running, and during ending animation.
   const showRing = mode === "timer" && (isActive || ringPhase === "ending")
 
   const remainingRatio = useMemo(() => {
     if (mode !== "timer") return 0
+
     const total = Math.max(1, timerDuration)
     return Math.min(1, Math.max(0, timeLeft / total))
   }, [mode, timeLeft, timerDuration])
 
-  const ringSize = 300
+  const ringSize = 310
   const ringStroke = 18
   const r = (ringSize - ringStroke) / 2
   const c = 2 * Math.PI * r
   const dash = c * remainingRatio
 
   const overlayClass = darkMode
-    ? "bg-gradient-to-b from-black/70 via-black/45 to-black/75"
-    : "bg-gradient-to-b from-black/45 via-black/25 to-black/55"
+    ? "bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.22),rgba(0,0,0,0.88))]"
+    : "bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.12),rgba(0,0,0,0.68))]"
 
-  const cardClass = darkMode ? "bg-black/35 border-white/12" : "bg-white/[0.06] border-white/10"
+  const cardClass = darkMode
+    ? "border-white/12 bg-black/42 shadow-black/45"
+    : "border-white/12 bg-black/28 shadow-black/35"
 
-  /* ---------- actions ---------- */
   const applyTimerMinutes = (mins: number) => {
     const seconds = mins * 60
+
     setMode("timer")
     setTimerDuration(seconds)
     setTimeLeft(seconds)
@@ -385,6 +360,7 @@ export default function Ekant() {
 
   const handleSliderChange = (idx: number) => {
     setSliderIndex(idx)
+
     const mins = sliderIndexToMinutes(idx)
     applyTimerMinutes(mins)
   }
@@ -414,32 +390,33 @@ export default function Ekant() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden" onPointerDown={handleUserNudge}>
       <style>{`
-
         @keyframes ringPulse {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0.85; }
+          50% { opacity: 0.86; }
         }
 
         @keyframes ringExit {
           0%   { transform: scale(1); opacity: 1; }
           60%  { transform: scale(0.86); opacity: 0.92; }
-          100% { transform: scale(0.92); opacity: 0; }
+          100% { transform: scale(0.94); opacity: 0; }
         }
       `}</style>
 
-      {/* Background Image */}
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
+        className="absolute inset-0 scale-[1.02] bg-cover bg-center bg-no-repeat transition-all duration-700"
         style={{ backgroundImage: `url(${currentTheme.image})` }}
       >
         <div className={`absolute inset-0 ${overlayClass}`} />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-black/45" />
       </div>
 
-      {/* Header (keep layout; in Zen we hide only the title text) */}
       <header className="relative z-[60] flex items-center justify-between p-6">
         <h1
-          className={`text-2xl font-light tracking-wider ${currentTheme.textColor} ${zenMode ? "opacity-0 pointer-events-none" : "opacity-100"}`}
-          style={{ fontFamily: `"Quarters", ui-sans-serif, system-ui` }}
+          className={[
+            "text-2xl font-semibold tracking-[0.22em] transition-opacity duration-300",
+            currentTheme.textColor,
+            zenMode ? "opacity-0 pointer-events-none" : "opacity-100",
+          ].join(" ")}
         >
           Ekant
         </h1>
@@ -449,32 +426,38 @@ export default function Ekant() {
             variant="ghost"
             size="icon"
             onClick={() => setShowSettings((v) => !v)}
-            className={`${currentTheme.textColor} ${currentTheme.buttonBg} border`}
+            className={[
+              "h-11 w-11 rounded-full border backdrop-blur-xl transition-all duration-300",
+              currentTheme.textColor,
+              currentTheme.buttonBg,
+            ].join(" ")}
           >
             {showSettings ? <X className="h-5 w-5" /> : <Settings2 className="h-5 w-5" />}
           </Button>
 
           {showSettings && (
-            <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-white/10 bg-black/40 backdrop-blur-xl shadow-2xl shadow-black/40">
-              <div className="p-4 space-y-4">
-                {/* Theme / Background image (hidden in Zen) */}
+            <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-3xl border border-white/10 bg-black/45 p-4 shadow-2xl shadow-black/50 backdrop-blur-2xl">
+              <div className="space-y-4">
                 {!zenMode && (
                   <div>
-                    <div className={`mb-2 flex items-center gap-2 text-xs tracking-[0.25em] ${currentTheme.textColor} opacity-70`}>
+                    <div
+                      className={`mb-3 flex items-center gap-2 text-xs tracking-[0.28em] ${currentTheme.textColor} opacity-70`}
+                    >
                       <ImageIcon className="h-4 w-4" />
                       BACKGROUND
                     </div>
+
                     <div className="grid grid-cols-2 gap-2">
                       {(Object.keys(themes) as Theme[]).map((t) => (
                         <button
                           key={t}
                           onClick={() => setTheme(t)}
                           className={[
-                            "rounded-xl border px-3 py-2 text-sm font-light transition-all",
-                            "hover:scale-[1.01] active:scale-[0.99]",
+                            "rounded-2xl border px-3 py-2.5 text-sm font-light transition-all",
+                            "hover:scale-[1.015] active:scale-[0.99]",
                             themes[t].buttonBg,
                             themes[t].textColor,
-                            theme === t ? "ring-2 ring-white/40" : "ring-0",
+                            theme === t ? "ring-2 ring-white/35" : "ring-0",
                           ].join(" ")}
                         >
                           {themes[t].name}
@@ -484,12 +467,11 @@ export default function Ekant() {
                   </div>
                 )}
 
-                {/* Zen mode toggle */}
                 <button
                   onClick={() => setZenMode((v) => !v)}
                   className={[
-                    "flex w-full items-center justify-between rounded-xl border border-white/10 px-3 py-3",
-                    "bg-white/[0.06] transition-all hover:bg-white/[0.08]",
+                    "flex w-full items-center justify-between rounded-2xl border border-white/10 px-4 py-3",
+                    "bg-white/[0.055] transition-all hover:bg-white/[0.085]",
                     currentTheme.textColor,
                   ].join(" ")}
                 >
@@ -497,12 +479,11 @@ export default function Ekant() {
                   <span className="text-sm font-light opacity-80">{zenMode ? "On" : "Off"}</span>
                 </button>
 
-                {/* Dark mode */}
                 <button
                   onClick={() => setDarkMode((v) => !v)}
                   className={[
-                    "flex w-full items-center justify-between rounded-xl border border-white/10 px-3 py-3",
-                    "bg-white/[0.06] transition-all hover:bg-white/[0.08]",
+                    "flex w-full items-center justify-between rounded-2xl border border-white/10 px-4 py-3",
+                    "bg-white/[0.055] transition-all hover:bg-white/[0.085]",
                     currentTheme.textColor,
                   ].join(" ")}
                 >
@@ -513,12 +494,11 @@ export default function Ekant() {
                   <span className="text-sm font-light opacity-80">{darkMode ? "On" : "Off"}</span>
                 </button>
 
-                {/* Sound */}
                 <button
                   onClick={() => setSoundEnabled((v) => !v)}
                   className={[
-                    "flex w-full items-center justify-between rounded-xl border border-white/10 px-3 py-3",
-                    "bg-white/[0.06] transition-all hover:bg-white/[0.08]",
+                    "flex w-full items-center justify-between rounded-2xl border border-white/10 px-4 py-3",
+                    "bg-white/[0.055] transition-all hover:bg-white/[0.085]",
                     currentTheme.textColor,
                   ].join(" ")}
                 >
@@ -529,8 +509,8 @@ export default function Ekant() {
                   <span className="text-sm font-light opacity-80">{soundEnabled ? "On" : "Off"}</span>
                 </button>
 
-                <div className={`text-xs ${currentTheme.textColor} opacity-60`}>
-                  Shortcuts: Space (start/pause), R (reset), T (timer), S (stopwatch), Z (zen), Esc (close)
+                <div className={`px-1 text-xs leading-relaxed ${currentTheme.textColor} opacity-55`}>
+                  Space start/pause · R reset · T timer · S stopwatch · Z zen
                 </div>
               </div>
             </div>
@@ -538,13 +518,18 @@ export default function Ekant() {
         </div>
       </header>
 
-      {/* Main */}
       <main className="relative z-10 flex h-[calc(100vh-96px)] items-center justify-center px-4 pb-10">
-        <div className="w-full max-w-xl">
-          <div className={["rounded-3xl backdrop-blur-xl border p-10 shadow-2xl shadow-black/30", cardClass].join(" ")}>
-            {/* Ring + Time */}
+        <div className="w-full max-w-[560px]">
+          <div
+            className={[
+              "relative overflow-hidden rounded-[2rem] border p-8 shadow-2xl backdrop-blur-2xl md:p-10",
+              cardClass,
+            ].join(" ")}
+          >
+            <div className={`pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r ${currentTheme.accent}`} />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.08),transparent_58%)]" />
+
             <div className="relative mx-auto flex flex-col items-center">
-              {/* Ring */}
               {showRing && (
                 <div
                   className="pointer-events-none mb-8"
@@ -553,12 +538,12 @@ export default function Ekant() {
                     animation: ringPhase === "ending" ? "ringExit 520ms ease-in forwards" : undefined,
                   }}
                 >
-                  <svg width={ringSize} height={ringSize} aria-hidden="true">
+                  <svg width={ringSize} height={ringSize} aria-hidden="true" className="overflow-visible">
                     <circle
                       cx={ringSize / 2}
                       cy={ringSize / 2}
                       r={r}
-                      stroke="rgba(255,255,255,0.18)"
+                      stroke="rgba(255,255,255,0.16)"
                       strokeWidth={ringStroke}
                       fill="transparent"
                     />
@@ -566,7 +551,7 @@ export default function Ekant() {
                       cx={ringSize / 2}
                       cy={ringSize / 2}
                       r={r}
-                      stroke="rgba(255,255,255,0.9)"
+                      stroke="rgba(255,255,255,0.92)"
                       strokeWidth={ringStroke}
                       fill="transparent"
                       strokeLinecap="round"
@@ -574,7 +559,7 @@ export default function Ekant() {
                       transform={`rotate(-90 ${ringSize / 2} ${ringSize / 2})`}
                       style={{
                         transition: "stroke-dasharray 250ms ease",
-                        filter: "drop-shadow(0 0 12px rgba(255,255,255,0.35))",
+                        filter: "drop-shadow(0 0 16px rgba(255,255,255,0.38))",
                         animation: ringPhase === "ending" ? undefined : "ringPulse 6s ease-in-out infinite",
                       }}
                     />
@@ -582,24 +567,23 @@ export default function Ekant() {
                 </div>
               )}
 
-              {/* Timer text */}
               <div className={`text-center ${currentTheme.textColor}`}>
-                <div className="text-7xl md:text-8xl font-extralight tracking-tight tabular-nums">{formatTime(timeLeft)}</div>
+                <div className="text-7xl font-extralight tracking-[-0.05em] tabular-nums drop-shadow-2xl md:text-8xl">
+                  {formatTime(timeLeft)}
+                </div>
 
-                {/* Hide extra labels in Zen */}
                 {!zenMode && (
                   <>
-                    <div className="mt-2 text-xs font-light tracking-[0.35em] opacity-70">{mode.toUpperCase()}</div>
-                    <div className="mt-3 text-xs font-light opacity-60">Sessions today: {sessionsToday}</div>
+                    <div className="mt-3 text-[11px] font-light tracking-[0.42em] opacity-65">{mode.toUpperCase()}</div>
+                    <div className="mt-3 text-xs font-light opacity-55">Sessions today: {sessionsToday}</div>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Controls (auto-hide while running) */}
             <div
               className={[
-                "mt-10 relative z-10 flex items-center justify-center gap-4 transition-all duration-300",
+                "relative z-10 mt-10 flex items-center justify-center gap-4 transition-all duration-300",
                 isActive && !showControls ? "opacity-0 pointer-events-none translate-y-2" : "opacity-100",
               ].join(" ")}
             >
@@ -608,23 +592,32 @@ export default function Ekant() {
                   setIsActive((v) => !v)
                   if (!isActive) scheduleHideControls()
                 }}
-                className={`${currentTheme.textColor} ${currentTheme.buttonBg} border rounded-full h-14 w-14 p-0`}
+                className={[
+                  "h-14 w-14 rounded-full border p-0 shadow-lg shadow-black/25 backdrop-blur-xl",
+                  "transition-all duration-300 hover:scale-[1.06] active:scale-[0.98]",
+                  currentTheme.textColor,
+                  currentTheme.buttonBg,
+                ].join(" ")}
               >
                 {isActive ? <Pause className="h-6 w-6" /> : <Play className="ml-0.5 h-6 w-6" />}
               </Button>
 
               <Button
                 onClick={handleReset}
-                className={`${currentTheme.textColor} ${currentTheme.buttonBg} border rounded-full h-14 w-14 p-0`}
+                className={[
+                  "h-14 w-14 rounded-full border p-0 shadow-lg shadow-black/25 backdrop-blur-xl",
+                  "transition-all duration-300 hover:scale-[1.06] active:scale-[0.98]",
+                  currentTheme.textColor,
+                  currentTheme.buttonBg,
+                ].join(" ")}
               >
                 <RotateCcw className="h-5 w-5" />
               </Button>
             </div>
 
-            {/* Slider (Timer only, not active) - hidden in Zen */}
             {!zenMode && !isActive && mode === "timer" && (
-              <div className="mt-10">
-                <div className={`mb-3 flex items-center justify-between text-sm ${currentTheme.textColor} opacity-80`}>
+              <div className="relative z-10 mt-10">
+                <div className={`mb-3 flex items-center justify-between text-sm ${currentTheme.textColor} opacity-75`}>
                   <span className="font-light">Duration</span>
                   <span className="tabular-nums font-light">{displayedMinutes} min</span>
                 </div>
@@ -639,23 +632,22 @@ export default function Ekant() {
                   className="w-full accent-white/80"
                 />
 
-                <div className={`mt-2 flex justify-between text-xs ${currentTheme.textColor} opacity-60`}>
+                <div className={`mt-2 flex justify-between text-xs ${currentTheme.textColor} opacity-45`}>
                   <span>1m</span>
                   <span>180m</span>
                 </div>
               </div>
             )}
 
-            {/* Mode Switch (not active) - hidden in Zen */}
             {!zenMode && !isActive && (
-              <div className="mt-8 flex justify-center gap-2">
+              <div className="relative z-10 mt-8 flex justify-center gap-2">
                 <button
                   onClick={switchToTimer}
                   className={[
-                    "rounded-full border px-5 py-2 text-sm font-light transition-all",
+                    "rounded-full border px-5 py-2.5 text-sm font-light transition-all",
                     currentTheme.textColor,
                     currentTheme.buttonBg,
-                    mode === "timer" ? "ring-2 ring-white/40" : "",
+                    mode === "timer" ? "ring-2 ring-white/35" : "",
                     "hover:scale-[1.03] active:scale-[0.98]",
                   ].join(" ")}
                 >
@@ -665,10 +657,10 @@ export default function Ekant() {
                 <button
                   onClick={switchToStopwatch}
                   className={[
-                    "rounded-full border px-5 py-2 text-sm font-light transition-all",
+                    "rounded-full border px-5 py-2.5 text-sm font-light transition-all",
                     currentTheme.textColor,
                     currentTheme.buttonBg,
-                    mode === "stopwatch" ? "ring-2 ring-white/40" : "",
+                    mode === "stopwatch" ? "ring-2 ring-white/35" : "",
                     "hover:scale-[1.03] active:scale-[0.98]",
                   ].join(" ")}
                 >
@@ -677,9 +669,10 @@ export default function Ekant() {
               </div>
             )}
 
-            {/* Hint to show controls while running (hidden in Zen) */}
             {!zenMode && isActive && !showControls && (
-              <div className={`mt-8 text-center text-xs ${currentTheme.textColor} opacity-60`}>Tap anywhere to show controls</div>
+              <div className={`relative z-10 mt-8 text-center text-xs ${currentTheme.textColor} opacity-50`}>
+                Tap anywhere to show controls
+              </div>
             )}
           </div>
         </div>
