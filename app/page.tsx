@@ -414,11 +414,6 @@ export default function Ekant() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden" onPointerDown={handleUserNudge}>
       <style>{`
-        @font-face {
-          font-family: "Quarters";
-          src: url("/fonts/Quarters.woff2") format("woff2");
-          font-display: swap;
-        }
 
         @keyframes ringPulse {
           0%, 100% { opacity: 1; }
